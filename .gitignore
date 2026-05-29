@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.env
+
+# Node
+node_modules/
+dist/
+.env
+
+# Docker
+.dockerignore
+
+# K8s secrets (never commit)
+k8s/**/secret.yaml
+
+# IDE
+.idea/
+.vscode/
+*.DS_Store

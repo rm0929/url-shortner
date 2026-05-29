@@ -1,0 +1,51 @@
+name: Deploy to AWS
+
+on:
+  workflow_dispatch:   # Manual trigger only — you control when to deploy
+  push:
+    branches: [main]
+    tags: ['v*']
+
+env:
+  AWS_REGION: us-east-1
+  ECR_URL: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+
+jobs:
+  deploy:
+    name: Build, Push & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push URL Service
+        run: |
+          docker build -t $ECR_URL/url-service:${{ github.sha }} ./url-service
+          docker push $ECR_URL/url-service:${{ github.sha }}
+
+      - name: Build & push Analytics Service
+        run: |
+          docker build -t $ECR_URL/analytics-service:${{ github.sha }} ./analytics-service
+          docker push $ECR_URL/analytics-service:${{ github.sha }}
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/url-shortener
+            git pull origin main
+            docker compose pull
+            docker compose up -d --no-deps url-service analytics-service
+            echo "Deployed successfully"

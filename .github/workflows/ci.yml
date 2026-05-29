@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-url-service:
+    name: Test URL Service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        working-directory: url-service
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: url-service
+        run: pytest tests/ -v
+
+  test-analytics-service:
+    name: Test Analytics Service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: analytics-service
+        run: npm ci
+
+      - name: Run tests
+        working-directory: analytics-service
+        run: npm test
+
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [test-url-service, test-analytics-service]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build URL Service image
+        run: docker build -t url-service:${{ github.sha }} ./url-service
+
+      - name: Build Analytics Service image
+        run: docker build -t analytics-service:${{ github.sha }} ./analytics-service
+
+      - name: Images built successfully
+        run: echo "Images built. Add ECR push steps here for AWS deployment."

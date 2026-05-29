@@ -1,0 +1,21 @@
+{
+  "name": "analytics-service",
+  "version": "1.0.0",
+  "description": "Async click analytics consumer — reads from SQS, writes to Postgres",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.572.0",
+    "express": "^4.19.2",
+    "pg": "^8.11.5",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.0"
+  }
+}
