@@ -20,6 +20,11 @@ class ShortenResponse(BaseModel):
     original_url: str
 
 
+@router.get("/health")
+async def health():
+    return {"status": "ok", "service": "url-service"}
+
+
 @router.post("/shorten", response_model=ShortenResponse)
 async def shorten_url(request: ShortenRequest, db: AsyncSession = Depends(get_db)):
     """Create a short URL."""
@@ -31,15 +36,6 @@ async def shorten_url(request: ShortenRequest, db: AsyncSession = Depends(get_db
     )
 
 
-@router.get("/{short_code}")
-async def redirect_url(short_code: str, db: AsyncSession = Depends(get_db)):
-    """Resolve short code and redirect. This is the hot path — optimised with Redis."""
-    original_url = await resolve_url(short_code, db)
-    if not original_url:
-        raise HTTPException(status_code=404, detail="Short URL not found")
-    return RedirectResponse(url=original_url, status_code=302)
-
-
 @router.get("/info/{short_code}")
 async def url_info(short_code: str, db: AsyncSession = Depends(get_db)):
     """Get info about a short URL without redirecting."""
@@ -47,3 +43,14 @@ async def url_info(short_code: str, db: AsyncSession = Depends(get_db)):
     if not original_url:
         raise HTTPException(status_code=404, detail="Short URL not found")
     return {"short_code": short_code, "original_url": original_url}
+
+
+# Wildcard MUST be last — FastAPI matches routes top to bottom.
+# Any GET route added above this line is safe; anything below would be unreachable.
+@router.get("/{short_code}")
+async def redirect_url(short_code: str, db: AsyncSession = Depends(get_db)):
+    """Resolve short code and redirect. This is the hot path — optimised with Redis."""
+    original_url = await resolve_url(short_code, db)
+    if not original_url:
+        raise HTTPException(status_code=404, detail="Short URL not found")
+    return RedirectResponse(url=original_url, status_code=302)

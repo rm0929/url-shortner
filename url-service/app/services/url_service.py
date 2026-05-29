@@ -3,6 +3,7 @@ import random
 import json
 import boto3
 from datetime import datetime
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -47,12 +48,12 @@ async def create_short_url(original_url: str, db: AsyncSession) -> URL:
     return url
 
 
-async def get_url_by_code(short_code: str, db: AsyncSession) -> URL | None:
+async def get_url_by_code(short_code: str, db: AsyncSession) -> Optional[URL]:
     result = await db.execute(select(URL).where(URL.short_code == short_code))
     return result.scalar_one_or_none()
 
 
-async def resolve_url(short_code: str, db: AsyncSession) -> str | None:
+async def resolve_url(short_code: str, db: AsyncSession) -> Optional[str]:
     # 1. Check Redis cache first (fast path)
     cached = await redis_client.get(f"url:{short_code}")
     if cached:
